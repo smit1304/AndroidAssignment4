@@ -4,8 +4,10 @@ import android.annotation.SuppressLint
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.model.LocationPlace
+import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.location.*
 
 class GeofencingHelper(private val context: Context) {
@@ -50,8 +52,13 @@ class GeofencingHelper(private val context: Context) {
             .addOnSuccessListener {
                 Toast.makeText(context, "Geofence set for ${place.name}", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener {
-                Toast.makeText(context, "Failed to add geofence", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e: Exception ->
+                if (e is ApiException) {
+                    Log.e("GEOFENCE", "Geofence failed: ${e.statusCode}")
+                } else {
+                    Log.e("GEOFENCE", "Unknown error: ${e.message}")
+                }
             }
+
     }
 }
