@@ -2,6 +2,7 @@ package com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.view
 
 import android.annotation.SuppressLint
 import android.location.Location
+import android.widget.Toast
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,34 +11,35 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.model.LocationPlace
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @SuppressLint("UnrememberedMutableState")
@@ -47,8 +49,14 @@ fun MapScreen(
     selectedPlace: LocationPlace,
     userLocation: Location?,
     onBack: () -> Unit
-
 ) {
+    val context = LocalContext.current
+
+    // Marker position that can change when user taps on the map
+    var markerPosition by remember {
+        mutableStateOf(selectedPlace.location)
+    }
+
     var uiSettings by remember {
         mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
     }
@@ -94,8 +102,9 @@ fun MapScreen(
         }
     }
 
-    // Keep camera focused on the selected place
+    // Keep camera and marker focused on the selected place when it changes
     LaunchedEffect(selectedPlace) {
+        markerPosition = selectedPlace.location
         cameraPositionState.position = CameraPosition.fromLatLngZoom(
             selectedPlace.location,
             15f
@@ -138,11 +147,23 @@ fun MapScreen(
                     zoomControlsEnabled = true,
                     compassEnabled = true,
                     myLocationButtonEnabled = true
-                )
+                ),
+                // handle taps on the map
+                onMapClick = { latLng ->
+                    // Move marker to this new position
+                    markerPosition = latLng
+
+                    // Show toast with lat / lng
+                    Toast.makeText(
+                        context,
+                        "You clicked here: ${latLng.latitude}, ${latLng.longitude}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             ) {
-                // Destination marker
+                // Destination marker (now uses markerPosition so it moves)
                 Marker(
-                    state = MarkerState(position = selectedPlace.location),
+                    state = MarkerState(position = markerPosition),
                     title = selectedPlace.name,
                     snippet = selectedPlace.address
                 )
@@ -155,7 +176,8 @@ fun MapScreen(
                     )
                 }
             }
-            // 3. UI to change map type
+
+            // UI to change map type
             MapTypeControls(
                 currentMapType = currentMapType,
                 onMapTypeSelected = { newMapType ->
@@ -165,8 +187,6 @@ fun MapScreen(
         }
     }
 }
-
-
 
 @Composable
 fun MapTypeControls(
@@ -190,7 +210,7 @@ fun MapTypeControls(
     ) {
         Text("Select Map Type:")
         Spacer(modifier = Modifier.height(8.dp))
-        // Example using Buttons in a Row
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -207,25 +227,5 @@ fun MapTypeControls(
                 }
             }
         }
-
-        // Alternative using RadioButtons
-        // mapTypes.forEach { mapType ->
-        //     Row(
-        //         verticalAlignment = Alignment.CenterVertically,
-        //         modifier = Modifier
-        //             .fillMaxWidth()
-        //             .padding(vertical = 4.dp)
-        //             .clickable { onMapTypeSelected(mapType) }
-        //     ) {
-        //         RadioButton(
-        //             selected = (mapType == currentMapType),
-        //             onClick = { onMapTypeSelected(mapType) }
-        //         )
-        //         Text(
-        //             text = mapType.toString(),
-        //             modifier = Modifier.padding(start = 8.dp)
-        //         )
-        //     }
-        // }
     }
 }
