@@ -31,7 +31,13 @@ fun MapScreen(
 ) {
     val context = LocalContext.current
 
+    // 1. State for Marker Position
     var markerPosition by remember { mutableStateOf(selectedPlace.location) }
+
+    // 2. State for Marker Text (Title & Snippet) so it can change dynamically
+    var markerTitle by remember { mutableStateOf(selectedPlace.name) }
+    var markerSnippet by remember { mutableStateOf(selectedPlace.address) }
+
     var currentMapType by remember { mutableStateOf(MapType.SATELLITE) }
 
     val mapProperties by remember(currentMapType) {
@@ -44,7 +50,6 @@ fun MapScreen(
 
     val userLatLng = userLocation?.let { LatLng(it.latitude, it.longitude) }
 
-    // Distance calculation (Kept same as before)
     val distanceText = remember(userLocation?.latitude, userLocation?.longitude, selectedPlace) {
         if (userLocation == null) {
             "Distance: locating…"
@@ -60,8 +65,11 @@ fun MapScreen(
         }
     }
 
+    // Reset everything if selectedPlace changes
     LaunchedEffect(selectedPlace) {
         markerPosition = selectedPlace.location
+        markerTitle = selectedPlace.name
+        markerSnippet = selectedPlace.address
         cameraPositionState.position = CameraPosition.fromLatLngZoom(selectedPlace.location, 15f)
     }
 
@@ -81,7 +89,6 @@ fun MapScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    // Add a slight shadow or color distinction for the app bar
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
@@ -92,8 +99,6 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            //  Map (Background)
-            //  Map (Background)
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
@@ -107,7 +112,11 @@ fun MapScreen(
                     // 1. Move the marker
                     markerPosition = latLng
 
-                    // 2. Show the specific coordinates in the Toast
+                    // 2. Update the text variables to reflect the NEW location
+                    markerTitle = "Dropped Pin"
+                    markerSnippet = "Lat: %.4f, Lng: %.4f".format(latLng.latitude, latLng.longitude)
+
+                    // 3. Show Toast
                     Toast.makeText(
                         context,
                         "Lat: ${latLng.latitude}, Lng: ${latLng.longitude}",
@@ -115,11 +124,13 @@ fun MapScreen(
                     ).show()
                 }
             ) {
+                // 4. Use the dynamic variables here instead of hardcoded selectedPlace.name
                 Marker(
                     state = MarkerState(position = markerPosition),
-                    title = selectedPlace.name,
-                    snippet = selectedPlace.address
+                    title = markerTitle,
+                    snippet = markerSnippet
                 )
+
                 if (userLatLng != null) {
                     Marker(
                         state = MarkerState(position = userLatLng),
@@ -128,7 +139,6 @@ fun MapScreen(
                 }
             }
 
-            // The Controls (Foreground - At the TOP now)
             MapTypeControls(
                 currentMapType = currentMapType,
                 onMapTypeSelected = { currentMapType = it },
@@ -156,7 +166,7 @@ fun MapTypeControls(
 
     Card(
         modifier = modifier
-            .padding(horizontal = 16.dp) // Padding on sides
+            .padding(horizontal = 16.dp)
             .fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(
