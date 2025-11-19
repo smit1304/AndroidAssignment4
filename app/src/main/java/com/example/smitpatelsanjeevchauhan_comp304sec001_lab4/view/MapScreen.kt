@@ -2,43 +2,24 @@ package com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.view
 
 import android.annotation.SuppressLint
 import android.location.Location
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.model.LocationPlace
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.MapProperties
-import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.MarkerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import com.google.maps.android.compose.MapType
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.*
 
 @SuppressLint("UnrememberedMutableState")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,59 +28,41 @@ fun MapScreen(
     selectedPlace: LocationPlace,
     userLocation: Location?,
     onBack: () -> Unit
-
 ) {
-    var uiSettings by remember {
-        mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
-    }
+    val context = LocalContext.current
 
-    // 1. State for the current map type
-    var currentMapType by remember {
-        mutableStateOf(MapType.SATELLITE) // Initial map type
-    }
+    var markerPosition by remember { mutableStateOf(selectedPlace.location) }
+    var currentMapType by remember { mutableStateOf(MapType.SATELLITE) }
 
-    // 2. MapProperties updated based on the currentMapType state
-    val mapProperties by remember(currentMapType) { // Recompose when currentMapType changes
+    val mapProperties by remember(currentMapType) {
         mutableStateOf(MapProperties(mapType = currentMapType))
     }
 
-    // Camera starts focused on the selected place
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(selectedPlace.location, 15f)
     }
 
     val userLatLng = userLocation?.let { LatLng(it.latitude, it.longitude) }
 
-    // Distance text
+    // Distance calculation (Kept same as before)
     val distanceText = remember(userLocation?.latitude, userLocation?.longitude, selectedPlace) {
         if (userLocation == null) {
             "Distance: locating…"
         } else {
             val results = FloatArray(1)
             Location.distanceBetween(
-                userLocation.latitude,
-                userLocation.longitude,
-                selectedPlace.location.latitude,
-                selectedPlace.location.longitude,
+                userLocation.latitude, userLocation.longitude,
+                selectedPlace.location.latitude, selectedPlace.location.longitude,
                 results
             )
             val meters = results[0]
-
-            // Handle distances formatting
-            if (meters < 1000f) {
-                "Distance: ${meters.toInt()} m"
-            } else {
-                "Distance: %.2f km".format(meters / 1000f)
-            }
+            if (meters < 1000f) "Distance: ${meters.toInt()} m" else "Distance: %.2f km".format(meters / 1000f)
         }
     }
 
-    // Keep camera focused on the selected place
     LaunchedEffect(selectedPlace) {
-        cameraPositionState.position = CameraPosition.fromLatLngZoom(
-            selectedPlace.location,
-            15f
-        )
+        markerPosition = selectedPlace.location
+        cameraPositionState.position = CameraPosition.fromLatLngZoom(selectedPlace.location, 15f)
     }
 
     Scaffold(
@@ -107,21 +70,20 @@ fun MapScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text(text = selectedPlace.name)
-                        Text(
-                            text = distanceText,
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                        Text(text = selectedPlace.name, style = MaterialTheme.typography.titleMedium)
+                        Text(text = distanceText, style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back"
-                        )
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    // Add a slight shadow or color distinction for the app bar
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
             )
         }
     ) { padding ->
@@ -130,6 +92,8 @@ fun MapScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            //  Map (Background)
+            //  Map (Background)
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
@@ -138,16 +102,24 @@ fun MapScreen(
                     zoomControlsEnabled = true,
                     compassEnabled = true,
                     myLocationButtonEnabled = true
-                )
+                ),
+                onMapClick = { latLng ->
+                    // 1. Move the marker
+                    markerPosition = latLng
+
+                    // 2. Show the specific coordinates in the Toast
+                    Toast.makeText(
+                        context,
+                        "Lat: ${latLng.latitude}, Lng: ${latLng.longitude}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             ) {
-                // Destination marker
                 Marker(
-                    state = MarkerState(position = selectedPlace.location),
+                    state = MarkerState(position = markerPosition),
                     title = selectedPlace.name,
                     snippet = selectedPlace.address
                 )
-
-                // User marker
                 if (userLatLng != null) {
                     Marker(
                         state = MarkerState(position = userLatLng),
@@ -155,19 +127,20 @@ fun MapScreen(
                     )
                 }
             }
-            // 3. UI to change map type
+
+            // The Controls (Foreground - At the TOP now)
             MapTypeControls(
                 currentMapType = currentMapType,
-                onMapTypeSelected = { newMapType ->
-                    currentMapType = newMapType
-                }
+                onMapTypeSelected = { currentMapType = it },
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp)
             )
         }
     }
 }
 
-
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapTypeControls(
     currentMapType: MapType,
@@ -178,54 +151,57 @@ fun MapTypeControls(
         MapType.NORMAL,
         MapType.SATELLITE,
         MapType.TERRAIN,
-        MapType.HYBRID,
-        MapType.NONE // Useful for a completely custom base layer
+        MapType.HYBRID
     )
 
-    Column(
+    Card(
         modifier = modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 16.dp) // Padding on sides
+            .fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f)
+        )
     ) {
-        Text("Select Map Type:")
-        Spacer(modifier = Modifier.height(8.dp))
-        // Example using Buttons in a Row
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            mapTypes.forEach { mapType ->
-                Button(
-                    onClick = { onMapTypeSelected(mapType) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 4.dp),
-                    enabled = mapType != currentMapType // Disable button for current type
-                ) {
-                    Text(mapType.toString())
+            Text(
+                text = "Layer:",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(mapTypes) { mapType ->
+                    val isSelected = mapType == currentMapType
+
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { onMapTypeSelected(mapType) },
+                        label = {
+                            Text(
+                                text = mapType.toString().lowercase().replaceFirstChar { it.uppercase() }
+                            )
+                        },
+                        leadingIcon = if (isSelected) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(FilterChipDefaults.IconSize)
+                                )
+                            }
+                        } else null
+                    )
                 }
             }
         }
-
-        // Alternative using RadioButtons
-        // mapTypes.forEach { mapType ->
-        //     Row(
-        //         verticalAlignment = Alignment.CenterVertically,
-        //         modifier = Modifier
-        //             .fillMaxWidth()
-        //             .padding(vertical = 4.dp)
-        //             .clickable { onMapTypeSelected(mapType) }
-        //     ) {
-        //         RadioButton(
-        //             selected = (mapType == currentMapType),
-        //             onClick = { onMapTypeSelected(mapType) }
-        //         )
-        //         Text(
-        //             text = mapType.toString(),
-        //             modifier = Modifier.padding(start = 8.dp)
-        //         )
-        //     }
-        // }
     }
 }
