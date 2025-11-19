@@ -20,7 +20,17 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 "You entered the area of $placeId",
                 Toast.LENGTH_LONG
             ).show()
-//            Log.w("Location", "You entered to the location")
+
         }
+        if (event.geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
+            val placeId = event.triggeringGeofences?.firstOrNull()?.requestId ?: "Unknown place"
+            Toast.makeText(
+                context,
+                "You exit the area of $placeId",
+                Toast.LENGTH_LONG
+            ).show()
+
+        }
+
     }
 }
