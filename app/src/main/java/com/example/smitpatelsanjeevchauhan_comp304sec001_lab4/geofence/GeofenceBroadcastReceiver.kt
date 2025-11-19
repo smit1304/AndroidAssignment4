@@ -3,6 +3,7 @@ package com.example.smitpatelsanjeevchauhan_comp304sec001_lab4.geofence
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import android.widget.Toast
 import com.google.android.gms.location.Geofence
 import com.google.android.gms.location.GeofencingEvent
@@ -19,6 +20,7 @@ class GeofenceBroadcastReceiver : BroadcastReceiver() {
                 "You entered the area of $placeId",
                 Toast.LENGTH_LONG
             ).show()
+//            Log.w("Location", "You entered to the location")
         }
     }
 }

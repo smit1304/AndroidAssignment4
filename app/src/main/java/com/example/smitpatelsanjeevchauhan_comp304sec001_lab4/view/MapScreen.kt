@@ -125,14 +125,14 @@ fun MapScreen(
                     myLocationButtonEnabled = true
                 ),
                 onMapClick = { latLng ->
-                    // 1. Move the marker
+                    // Move the marker
                     markerPosition = latLng
 
-                    // 2. Update the text variables to reflect the NEW location
+                    // Update the text variables to reflect the NEW location
                     markerTitle = "Dropped Pin"
                     markerSnippet = "Lat: %.4f, Lng: %.4f".format(latLng.latitude, latLng.longitude)
 
-                    // 3. Show Toast
+                    // Show Toast
                     Toast.makeText(
                         context,
                         "Lat: ${latLng.latitude}, Lng: ${latLng.longitude}",
@@ -140,7 +140,7 @@ fun MapScreen(
                     ).show()
                 }
             ) {
-                // 4. Use the dynamic variables here instead of hardcoded selectedPlace.name
+                // Use the dynamic variables here instead of hardcoded selectedPlace.name
                 Marker(
                     state = MarkerState(position = markerPosition),
                     title = markerTitle,
