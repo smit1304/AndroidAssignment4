@@ -19,8 +19,7 @@ class GeofencingHelper(private val context: Context) {
         val intent = Intent(context, GeofenceBroadcastReceiver::class.java)
         intent.action = "com.example.GEOFENCE_EVENT"
 
-        val flags =
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
 
         return PendingIntent.getBroadcast(
             context,
@@ -37,7 +36,7 @@ class GeofencingHelper(private val context: Context) {
             .setCircularRegion(
                 place.location.latitude,
                 place.location.longitude,
-                200f     // 200m radius
+                200f
             )
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
             .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
