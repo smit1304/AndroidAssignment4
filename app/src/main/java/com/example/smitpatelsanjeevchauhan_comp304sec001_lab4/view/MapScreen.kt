@@ -4,7 +4,11 @@ import android.annotation.SuppressLint
 import android.location.Location
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -25,8 +29,15 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.rememberCameraPositionState
 
 @SuppressLint("UnrememberedMutableState")
@@ -36,7 +47,22 @@ fun MapScreen(
     selectedPlace: LocationPlace,
     userLocation: Location?,
     onBack: () -> Unit
+
 ) {
+    var uiSettings by remember {
+        mutableStateOf(MapUiSettings(zoomControlsEnabled = true))
+    }
+
+    // 1. State for the current map type
+    var currentMapType by remember {
+        mutableStateOf(MapType.SATELLITE) // Initial map type
+    }
+
+    // 2. MapProperties updated based on the currentMapType state
+    val mapProperties by remember(currentMapType) { // Recompose when currentMapType changes
+        mutableStateOf(MapProperties(mapType = currentMapType))
+    }
+
     // Camera starts focused on the selected place
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(selectedPlace.location, 15f)
@@ -107,9 +133,7 @@ fun MapScreen(
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
-                properties = MapProperties(
-                    isMyLocationEnabled = userLatLng != null
-                ),
+                properties = mapProperties,
                 uiSettings = MapUiSettings(
                     zoomControlsEnabled = true,
                     compassEnabled = true,
@@ -131,6 +155,77 @@ fun MapScreen(
                     )
                 }
             }
+            // 3. UI to change map type
+            MapTypeControls(
+                currentMapType = currentMapType,
+                onMapTypeSelected = { newMapType ->
+                    currentMapType = newMapType
+                }
+            )
         }
+    }
+}
+
+
+
+@Composable
+fun MapTypeControls(
+    currentMapType: MapType,
+    onMapTypeSelected: (MapType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val mapTypes = listOf(
+        MapType.NORMAL,
+        MapType.SATELLITE,
+        MapType.TERRAIN,
+        MapType.HYBRID,
+        MapType.NONE // Useful for a completely custom base layer
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Select Map Type:")
+        Spacer(modifier = Modifier.height(8.dp))
+        // Example using Buttons in a Row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            mapTypes.forEach { mapType ->
+                Button(
+                    onClick = { onMapTypeSelected(mapType) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 4.dp),
+                    enabled = mapType != currentMapType // Disable button for current type
+                ) {
+                    Text(mapType.toString())
+                }
+            }
+        }
+
+        // Alternative using RadioButtons
+        // mapTypes.forEach { mapType ->
+        //     Row(
+        //         verticalAlignment = Alignment.CenterVertically,
+        //         modifier = Modifier
+        //             .fillMaxWidth()
+        //             .padding(vertical = 4.dp)
+        //             .clickable { onMapTypeSelected(mapType) }
+        //     ) {
+        //         RadioButton(
+        //             selected = (mapType == currentMapType),
+        //             onClick = { onMapTypeSelected(mapType) }
+        //         )
+        //         Text(
+        //             text = mapType.toString(),
+        //             modifier = Modifier.padding(start = 8.dp)
+        //         )
+        //     }
+        // }
     }
 }
